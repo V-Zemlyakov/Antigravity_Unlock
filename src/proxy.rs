@@ -484,6 +484,9 @@ const TUNNEL_OPEN_BUDGET: Duration = Duration::from_secs(10);
 /// the next route (I35). The old shape connected with the OS default timeout
 /// and answered 502, which cost a client 21 s per dead address and then nothing.
 fn try_direct(mut client: TcpStream, host: &str, port: u16) -> Result<(), TcpStream> {
+    if !crate::settings::allow_direct() {
+        return Err(client);
+    }
     let upstream = match connect_gate_direct(host, port, DIRECT_OPEN_BUDGET) {
         Ok(sock) => sock,
         Err(why) => {
