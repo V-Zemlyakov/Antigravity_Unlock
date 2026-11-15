@@ -53,6 +53,8 @@ pub enum Cap {
     LocalProxy,
     /// The user's own HTTP proxy.
     OwnProxy,
+    /// Allow direct connection fallback for model requests.
+    DirectFallback,
     GroupProxy,
     /// Whether the DNS pool rotates, or only its first enabled member answers.
     DnsRotation,
@@ -76,6 +78,7 @@ impl Cap {
             Cap::Dns => "Обход через DNS",
             Cap::LocalProxy => "Локальный прокси",
             Cap::OwnProxy => "Свой HTTP-прокси",
+            Cap::DirectFallback => "Прямое подключение (Direct)",
             Cap::GroupProxy => "Прокси из группы",
             Cap::DnsRotation => "Ротация DNS-серверов",
         }
@@ -195,6 +198,7 @@ pub struct Status {
     pub dns: State,
     pub local_proxy: State,
     pub own_proxy: State,
+    pub direct_fallback: State,
     pub group_proxy: State,
     pub dns_rotation: State,
     /// What the last measurement saw. `None` means it has not been taken yet;
@@ -231,6 +235,7 @@ impl Status {
             Cap::Dns => &self.dns,
             Cap::LocalProxy => &self.local_proxy,
             Cap::OwnProxy => &self.own_proxy,
+            Cap::DirectFallback => &self.direct_fallback,
             Cap::GroupProxy => &self.group_proxy,
             Cap::DnsRotation => &self.dns_rotation,
         }
@@ -755,7 +760,7 @@ fn scan_after(cap: Cap) -> Scan {
         // The one action that changes what is *inside* the binaries, so the one
         // that has to pay for re-reading them.
         Cap::ClientPatch => Scan::Deep,
-        Cap::Watchdog | Cap::Dns | Cap::LocalProxy | Cap::OwnProxy | Cap::DnsRotation => {
+        Cap::Watchdog | Cap::Dns | Cap::LocalProxy | Cap::OwnProxy | Cap::DnsRotation | Cap::DirectFallback => {
             Scan::System
         }
         Cap::GroupProxy => Scan::Settings,
@@ -846,6 +851,7 @@ impl Status {
         } else {
             on_off(s.group_proxy)
         };
+        self.direct_fallback = on_off(s.allow_direct);
         self.custom_dns_text = s.custom_dns.clone();
         self.dns_rotation = if s.rotate_providers {
             State::On
@@ -944,6 +950,7 @@ fn read_status(ctx: &mut Ctx, deep: bool) -> Status {
         ),
         local_proxy,
         own_proxy,
+        direct_fallback: on_off(ctx.settings.allow_direct),
         own_proxy_text,
         custom_dns_text: ctx.settings.custom_dns.clone(),
         group_proxy: State::Off,
@@ -1313,6 +1320,18 @@ fn apply(ctx: &mut Ctx, cap: Cap, on: bool) {
                 ctx.log(Level::Ok, "Свой прокси отключён.");
                 release_route_carrier(ctx);
             }
+        }
+        (Cap::DirectFallback, on) => {
+            ctx.settings.allow_direct = on;
+            ctx.settings.save();
+            ctx.log(
+                Level::Ok,
+                if on {
+                    "Прямое подключение разрешено (Direct включён)."
+                } else {
+                    "Прямое подключение запрещено (только через прокси)."
+                },
+            );
         }
         (Cap::DnsRotation, on) => {
             ctx.settings.rotate_providers = on;
@@ -2516,6 +2535,7 @@ mod tests {
             dns: State::Off,
             local_proxy: State::Off,
             own_proxy: State::Off,
+            direct_fallback: State::On,
             group_proxy: State::Off,
             dns_rotation: State::Off,
             vpn: None,

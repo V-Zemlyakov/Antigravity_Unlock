@@ -1,0 +1,29 @@
+# Rust build artifacts
+target/
+**/*.rs.bk
+Cargo.lock.backup
+
+# IDEs & Editors
+.idea/
+.vscode/
+*.iml
+*.sublime-project
+*.sublime-workspace
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Secrets, local configs and logs
+.env
+.env.*
+!.env.example
+.group
+*.log
+forwarder.log
+settings.json
+upstream.txt

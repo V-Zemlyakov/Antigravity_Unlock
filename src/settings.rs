@@ -136,9 +136,17 @@ pub struct Settings {
     pub own_proxy: String,
     pub own_proxy_enabled: bool,
 
+    /// Whether model/gate requests are allowed to connect directly when proxy fails or is unconfigured.
+    #[serde(default = "default_allow_direct")]
+    pub allow_direct: bool,
+
     /// Installs the user pointed at by hand, on top of the ones found by the
     /// scan (the pencil next to each path).
     pub manual_paths: Vec<PathBuf>,
+}
+
+fn default_allow_direct() -> bool {
+    true
 }
 
 impl Default for Settings {
@@ -167,6 +175,7 @@ impl Default for Settings {
             verify_tls: true,
             own_proxy: String::new(),
             own_proxy_enabled: false,
+            allow_direct: true,
             manual_paths: Vec::new(),
         }
     }
@@ -458,13 +467,17 @@ pub fn local_proxy_wanted() -> bool {
 /// window (the relay's first start races the first save), and the route being
 /// there is the shipped behaviour.
 pub fn group_proxy_enabled() -> bool {
-    cached().group_proxy
+    false
 }
 
 /// The user's own proxy was set after the group code, so it goes first.
 pub fn own_proxy_first() -> bool {
     let c = cached();
     c.own_proxy_at > c.group_key_at
+}
+
+pub fn allow_direct() -> bool {
+    cached().allow_direct
 }
 
 pub fn group_key() -> String {

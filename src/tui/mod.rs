@@ -764,13 +764,9 @@ impl App {
             }
             rows.push(Row::CustomDnsText);
             rows.push(Row::Cap(Cap::LocalProxy));
-            rows.push(Row::Cap(Cap::GroupProxy));
-            rows.push(Row::GroupProxyText);
-            rows.push(Row::GroupProxyOpenRoom);
-            rows.push(Row::GroupProxyCopy);
-            rows.push(Row::GroupProxyPaste);
             rows.push(Row::Cap(Cap::OwnProxy));
             rows.push(Row::OwnProxyText);
+            rows.push(Row::Cap(Cap::DirectFallback));
         }
         if crate::gui::report::ENABLED {
             rows.push(Row::Report);
@@ -1336,16 +1332,8 @@ fn wrapped_height(text: &str, width: u16) -> u16 {
 
 /// The licence screen, always — except in a *debug* build started with
 /// `AG_UNLOCKER_DEV_SKIP_KEY`, as in the window.
-fn first_screen(settings: &crate::settings::Settings) -> Screen {
-    #[cfg(debug_assertions)]
-    if std::env::var_os("AG_UNLOCKER_DEV_SKIP_KEY").is_some() {
-        return Screen::Main;
-    }
-    // A key accepted before and still good for this version: no screen.
-    if auth::verify_key(&settings.license_key) {
-        return Screen::Main;
-    }
-    Screen::License
+fn first_screen(_settings: &crate::settings::Settings) -> Screen {
+    Screen::Main
 }
 
 enum Copied {

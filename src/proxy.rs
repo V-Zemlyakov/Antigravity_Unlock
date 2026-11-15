@@ -662,7 +662,7 @@ pub fn route_usable(kind: routes::Kind, host: &str) -> bool {
 /// do (S37): a needless hop costs one connection, a missing route costs every
 /// request.
 fn direct_usable(host: &str) -> bool {
-    !crate::dns_route::addresses(host).is_empty()
+    crate::settings::allow_direct() && !crate::dns_route::addresses(host).is_empty()
 }
 
 #[cfg(exits)]
@@ -1268,11 +1268,8 @@ fn serve_gate(client: TcpStream, host: &str, port: u16) {
     }
     // Every route refused. Where the direct route was left out of the table (a
     // passthrough answer, or benched), it is tried anyway as the last resort -
-    // a genuine Google address that answers 400 still beats a client with no
-    // status line at all, and the refusal it earns is what the watch learns
-    // from. Through the relay's pool, never the system resolver: with the
-    // loopback listener up, that one answers with our own address.
-    if !tried_direct && started.elapsed() < GATE_OPEN_BUDGET {
+    // only if allow_direct is enabled.
+    if crate::settings::allow_direct() && !tried_direct && started.elapsed() < GATE_OPEN_BUDGET {
         client.set_read_timeout(None).ok();
         if let Ok(upstream) = connect_gate_direct(host, port, DIRECT_OPEN_BUDGET) {
             if client.write_all(RESP_ESTABLISHED).is_ok() {

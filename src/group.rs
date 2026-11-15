@@ -446,7 +446,7 @@ fn group_route() -> &'static Route {
 }
 
 pub fn available() -> bool {
-    get_active_key().is_some() && group_route().usable()
+    false
 }
 
 fn agu2_config() -> std::sync::Arc<rustls::ClientConfig> {
